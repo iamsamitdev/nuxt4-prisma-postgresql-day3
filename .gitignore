@@ -1,0 +1,15 @@
+hello-nuxt/node_modules
+hello-nuxt/.nuxt
+hello-nuxt/dist
+hello-nuxt/.env
+hello-nuxt/.env.local
+hello-nuxt/.env.*.local
+hello-nuxt/.DS_Store
+hello-nuxt/.output
+dreambuddy/node_modules
+dreambuddy/.nuxt
+dreambuddy/dist
+dreambuddy/.env
+dreambuddy/.env.local
+dreambuddy/.env.*.local
+dreambuddy/.DS_Store
