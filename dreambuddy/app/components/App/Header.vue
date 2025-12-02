@@ -67,6 +67,9 @@ const scrollToTop = (e: Event) => {
 
         <!-- CTA Buttons -->
         <div class="flex items-center space-x-4">
+
+          <!-- Theme Toggle Button -->
+          <AppThemeToggle />
           
           <UButton variant="ghost" size="md" class="hidden sm:inline-flex cursor-pointer">
             Sign In
