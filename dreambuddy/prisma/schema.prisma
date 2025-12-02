@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// schema.prisma สำหรับ DreamBuddy
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------
+// ENUMS
+// -----------------------------
+
+// โหมดการมองเห็นเป้าหมาย
+enum GoalVisibility {
+  PRIVATE   // เห็นได้เฉพาะเจ้าของ
+  PUBLIC    // แสดงใน Explore / โปรไฟล์
+  LINK_ONLY // เข้าถึงได้เฉพาะคนที่มีลิงก์
+}
+
+// ประเภทของรายการเงินเคลื่อนไหว
+enum TransactionType {
+  DEPOSIT   // ออมเพิ่ม
+  WITHDRAW  // ถอนออก (กรณีพิเศษ)
+}
+
+// -----------------------------
+// MODELS หลัก
+// -----------------------------
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String?
+  username     String    @unique             // ใช้สำหรับ URL โปรไฟล์ /user/:username
+  email        String    @unique
+  passwordHash String?                       // ถ้าใช้ OAuth อย่างเดียว อาจเป็น null
+  provider     String?                       // เช่น "google", "github"
+  providerId   String?                       // id จาก provider ภายนอก
+  avatarUrl    String?
+  bio          String?
+  goals        Goal[]
+  transactions Transaction[]
+  comments     GoalComment[]
+  likes        GoalLike[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([username])
+  @@index([email])
+}
+
+// เป้าหมายการเก็บเงินแต่ละรายการ
+model Goal {
+  id            Int             @id @default(autoincrement())
+  title         String
+  note          String?
+  category      String?                         // เช่น Travel, Gadget, Education
+  imageUrl      String?
+  targetAmount  Decimal         @db.Decimal(12, 2)
+  savedAmount   Decimal         @db.Decimal(12, 2) @default(0)
+  targetDate    DateTime
+  visibility    GoalVisibility  @default(PRIVATE)
+  shareSlug     String?         @unique          // สำหรับแชร์ลิงก์แบบ LINK_ONLY เช่น dreambuddy.app/g/:slug
+  likesCount    Int             @default(0)      // cache จำนวน like
+  ownerId       Int
+  owner         User            @relation(fields: [ownerId], references: [id])
+  transactions  Transaction[]
+  comments      GoalComment[]
+  likes         GoalLike[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([ownerId])
+  @@index([visibility])
+  @@index([category])
+}
+
+// รายการการออม/ถอนเงินในแต่ละเป้าหมาย
+model Transaction {
+  id        Int             @id @default(autoincrement())
+  goalId    Int
+  goal      Goal            @relation(fields: [goalId], references: [id])
+  userId    Int?                               // เผื่ออนาคตมีหลายคนออมร่วมกัน
+  user      User?           @relation(fields: [userId], references: [id])
+  amount    Decimal         @db.Decimal(12, 2) // จำนวนเงิน (+/- ขึ้นกับ type)
+  type      TransactionType @default(DEPOSIT)
+  note      String?
+  createdAt DateTime        @default(now())
+
+  @@index([goalId])
+  @@index([userId])
+}
+
+// การกดถูกใจเป้าหมาย (ให้กำลังใจ)
+model GoalLike {
+  userId Int
+  goalId Int
+  user   User @relation(fields: [userId], references: [id])
+  goal   Goal @relation(fields: [goalId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([userId, goalId]) // หนึ่งคนกด like เป้าหมายหนึ่งได้ครั้งเดียว
+  @@index([goalId])
+}
+
+// คอมเมนต์ให้กำลังใจหรือแสดงความคิดเห็นบนเป้าหมาย
+model GoalComment {
+  id        Int      @id @default(autoincrement())
+  goalId    Int
+  goal      Goal     @relation(fields: [goalId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  content   String   // ข้อความคอมเมนต์
+  createdAt DateTime @default(now())
+
+  @@index([goalId])
+  @@index([userId])
+}
