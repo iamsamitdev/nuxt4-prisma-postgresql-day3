@@ -41,7 +41,7 @@ export function verifyToken(token: string): JwtPayload | null {
 
 export function setAuthCookie(event: H3Event, token: string) {
   setCookie(event, COOKIE_NAME, token, {
-    httpOnly: true,
+    httpOnly: false,
     path: '/',
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',

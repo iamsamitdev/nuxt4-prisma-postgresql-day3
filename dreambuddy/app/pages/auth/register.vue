@@ -1,5 +1,9 @@
 <script setup lang="ts">
+import * as z from 'zod'
+import type { FormSubmitEvent } from '@nuxt/ui'
+
 const { $t, $localePath } = useI18n()
+const toast = useToast()
 
 definePageMeta({
   layout: 'auth'
@@ -15,31 +19,62 @@ useHead({
   ]
 })
 
-const name = ref('')
-const email = ref('')
-const password = ref('')
-const confirmPassword = ref('')
-const agreeTerms = ref(false)
+const schema = z.object({
+  name: z.string().min(1, String($t('auth.register.nameRequired') || 'Name is required')),
+  username: z.string().min(3, String($t('auth.register.usernameTooShort') || 'Username must be at least 3 characters')),
+  email: z.string().email(String($t('auth.login.invalidEmail') || 'Invalid email')),
+  password: z.string().min(6, String($t('auth.login.passwordTooShort') || 'Password must be at least 6 characters')),
+  confirmPassword: z.string(),
+  agreeTerms: z.boolean().refine(val => val === true, {
+    message: String($t('auth.register.mustAgreeTerms') || 'You must agree to the terms')
+  })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: String($t('auth.register.passwordsDoNotMatch') || 'Passwords do not match'),
+  path: ['confirmPassword']
+})
+
+type Schema = z.output<typeof schema>
+
+const state = reactive({
+  name: '',
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  agreeTerms: false
+})
+
 const isLoading = ref(false)
 
-const handleRegister = async () => {
-  if (password.value !== confirmPassword.value) {
-    // TODO: Show error message
-    console.error('Passwords do not match')
-    return
-  }
-  
-  if (!agreeTerms.value) {
-    // TODO: Show error message
-    console.error('Please agree to terms')
-    return
-  }
-
+const onSubmit = async (event: FormSubmitEvent<Schema>) => {
   isLoading.value = true
-  // TODO: Implement register logic
-  setTimeout(() => {
+  try {
+    await $fetch('/api/auth/register', {
+      method: 'POST',
+      body: {
+        name: event.data.name,
+        username: event.data.username,
+        email: event.data.email,
+        password: event.data.password
+      }
+    })
+    
+    toast.add({ 
+      title: String($t('auth.login.successTitle') || 'Success'), 
+      description: String($t('auth.register.successMessage') || 'Account created successfully'), 
+      color: 'success' 
+    })
+    
+    await navigateTo($localePath('/auth/login'))
+  } catch (error: any) {
+    toast.add({ 
+      title: String($t('auth.login.errorTitle') || 'Error'), 
+      description: error.data?.statusMessage || error.message || String($t('auth.register.errorMessage') || 'Registration failed'), 
+      color: 'error' 
+    })
+  } finally {
     isLoading.value = false
-  }, 1000)
+  }
 }
 
 const handleSocialRegister = (provider: string) => {
@@ -99,19 +134,14 @@ const handleSocialRegister = (provider: string) => {
     </div>
 
     <!-- Register Form -->
-    <form @submit.prevent="handleRegister" class="space-y-4">
+    <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
       <!-- Name -->
-      <div>
-        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('auth.register.name') }}
-        </label>
+      <UFormField :label="String($t('auth.register.name'))" name="name">
         <UInput
-          id="name"
-          v-model="name"
+          v-model="state.name"
           type="text"
-          :placeholder="$t('auth.register.namePlaceholder') as string"
+          :placeholder="String($t('auth.register.namePlaceholder'))"
           size="lg"
-          required
           autocomplete="name"
           class="w-full"
         >
@@ -119,20 +149,31 @@ const handleSocialRegister = (provider: string) => {
             <Icon name="i-heroicons-user" class="w-5 h-5 text-gray-400" />
           </template>
         </UInput>
-      </div>
+      </UFormField>
+
+      <!-- Username -->
+      <UFormField :label="String($t('auth.register.username') || 'Username')" name="username">
+        <UInput
+          v-model="state.username"
+          type="text"
+          :placeholder="String($t('auth.register.usernamePlaceholder') || 'Enter your username')"
+          size="lg"
+          autocomplete="username"
+          class="w-full"
+        >
+          <template #leading>
+            <Icon name="i-heroicons-at-symbol" class="w-5 h-5 text-gray-400" />
+          </template>
+        </UInput>
+      </UFormField>
 
       <!-- Email -->
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('auth.register.email') }}
-        </label>
+      <UFormField :label="String($t('auth.register.email'))" name="email">
         <UInput
-          id="email"
-          v-model="email"
+          v-model="state.email"
           type="email"
-          :placeholder="$t('auth.register.emailPlaceholder') as string"
+          :placeholder="String($t('auth.register.emailPlaceholder'))"
           size="lg"
-          required
           autocomplete="email"
           class="w-full"
         >
@@ -140,20 +181,15 @@ const handleSocialRegister = (provider: string) => {
             <Icon name="i-heroicons-envelope" class="w-5 h-5 text-gray-400" />
           </template>
         </UInput>
-      </div>
+      </UFormField>
 
       <!-- Password -->
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('auth.register.password') }}
-        </label>
+      <UFormField :label="String($t('auth.register.password'))" name="password">
         <UInput
-          id="password"
-          v-model="password"
+          v-model="state.password"
           type="password"
-          :placeholder="$t('auth.register.passwordPlaceholder') as string"
+          :placeholder="String($t('auth.register.passwordPlaceholder'))"
           size="lg"
-          required
           autocomplete="new-password"
           class="w-full"
         >
@@ -161,20 +197,15 @@ const handleSocialRegister = (provider: string) => {
             <Icon name="i-heroicons-lock-closed" class="w-5 h-5 text-gray-400" />
           </template>
         </UInput>
-      </div>
+      </UFormField>
 
       <!-- Confirm Password -->
-      <div>
-        <label for="confirm-password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('auth.register.confirmPassword') }}
-        </label>
+      <UFormField :label="String($t('auth.register.confirmPassword'))" name="confirmPassword">
         <UInput
-          id="confirm-password"
-          v-model="confirmPassword"
+          v-model="state.confirmPassword"
           type="password"
-          :placeholder="$t('auth.register.confirmPasswordPlaceholder') as string"
+          :placeholder="String($t('auth.register.confirmPasswordPlaceholder'))"
           size="lg"
-          required
           autocomplete="new-password"
           class="w-full"
         >
@@ -182,28 +213,25 @@ const handleSocialRegister = (provider: string) => {
             <Icon name="i-heroicons-lock-closed" class="w-5 h-5 text-gray-400" />
           </template>
         </UInput>
-      </div>
+      </UFormField>
 
       <!-- Terms & Conditions -->
-      <div class="flex items-start">
-        <input
-          id="agree-terms"
-          v-model="agreeTerms"
-          type="checkbox"
-          class="h-4 w-4 mt-1 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
-          required
-        />
-        <label for="agree-terms" class="ml-2 block text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-          {{ $t('auth.register.agreeToTerms') }}
-          <NuxtLink :to="$localePath('/terms')" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-            {{ $t('auth.register.termsOfService') }}
-          </NuxtLink>
-          {{ $t('auth.register.and') }}
-          <NuxtLink :to="$localePath('/privacy')" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
-            {{ $t('auth.register.privacyPolicy') }}
-          </NuxtLink>
-        </label>
-      </div>
+      <UFormField name="agreeTerms">
+        <UCheckbox v-model="state.agreeTerms" name="agree-terms">
+          <template #label>
+            <span class="text-sm text-gray-700 dark:text-gray-300">
+              {{ $t('auth.register.agreeToTerms') }}
+              <NuxtLink :to="$localePath('/terms')" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                {{ $t('auth.register.termsOfService') }}
+              </NuxtLink>
+              {{ $t('auth.register.and') }}
+              <NuxtLink :to="$localePath('/privacy')" class="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400">
+                {{ $t('auth.register.privacyPolicy') }}
+              </NuxtLink>
+            </span>
+          </template>
+        </UCheckbox>
+      </UFormField>
 
       <!-- Submit Button -->
       <UButton
@@ -217,7 +245,7 @@ const handleSocialRegister = (provider: string) => {
       >
         {{ $t('auth.register.createAccount') }}
       </UButton>
-    </form>
+    </UForm>
 
     <!-- Sign In Link -->
     <div class="text-center">

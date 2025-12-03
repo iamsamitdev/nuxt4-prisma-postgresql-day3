@@ -1,5 +1,10 @@
 <script setup lang="ts">
+import * as z from 'zod'
+import type { FormSubmitEvent } from '@nuxt/ui'
+
 const { $t, $localePath } = useI18n()
+const toast = useToast()
+const router = useRouter()
 
 definePageMeta({
   layout: 'auth'
@@ -15,24 +20,54 @@ useHead({
   ]
 })
 
-const email = ref('')
-const password = ref('')
-const rememberMe = ref(false)
+const schema = z.object({
+  email: z.string().email(String($t('auth.login.invalidEmail') || 'Invalid email')),
+  password: z.string().min(6, String($t('auth.login.passwordTooShort') || 'Password must be at least 6 characters'))
+})
+
+type Schema = z.output<typeof schema>
+
+const state = reactive({
+  email: '',
+  password: '',
+  rememberMe: false
+})
+
 const isLoading = ref(false)
 
-const handleLogin = async () => {
+const onSubmit = async (event: FormSubmitEvent<Schema>) => {
   isLoading.value = true
-  // TODO: Implement login logic
-  setTimeout(() => {
+  try {
+    await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: {
+        email: event.data.email,
+        password: event.data.password
+      }
+    })
+    
+    toast.add({ 
+      title: String($t('auth.login.successTitle') || 'Success'), 
+      description: String($t('auth.login.successMessage') || 'Logged in successfully'), 
+      color: 'success' 
+    })
+    
+    await navigateTo($localePath('/'))
+  } catch (error: any) {
+    toast.add({ 
+      title: String($t('auth.login.errorTitle') || 'Error'), 
+      description: error.data?.statusMessage || error.message || String($t('auth.login.errorMessage') || 'Login failed'), 
+      color: 'error' 
+    })
+  } finally {
     isLoading.value = false
-  }, 1000)
+  }
 }
 
 const handleSocialLogin = (provider: string) => {
   // TODO: Implement social login
   console.log('Login with:', provider)
 }
-
 </script>
 
 <template>
@@ -86,19 +121,14 @@ const handleSocialLogin = (provider: string) => {
     </div>
 
     <!-- Login Form -->
-    <form @submit.prevent="handleLogin" class="space-y-4">
+    <UForm :schema="schema" :state="state" class="space-y-4" @submit="onSubmit">
       <!-- Email -->
-      <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('auth.login.email') }}
-        </label>
+      <UFormField :label="String($t('auth.login.email'))" name="email">
         <UInput
-          id="email"
-          v-model="email"
+          v-model="state.email"
           type="email"
           :placeholder="String($t('auth.login.emailPlaceholder'))"
           size="lg"
-          required
           autocomplete="email"
           class="w-full"
         >
@@ -106,20 +136,15 @@ const handleSocialLogin = (provider: string) => {
             <Icon name="i-heroicons-envelope" class="w-5 h-5 text-gray-400" />
           </template>
         </UInput>
-      </div>
+      </UFormField>
 
       <!-- Password -->
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          {{ $t('auth.login.password') }}
-        </label>
+      <UFormField :label="String($t('auth.login.password'))" name="password">
         <UInput
-          id="password"
-          v-model="password"
+          v-model="state.password"
           type="password"
           :placeholder="String($t('auth.login.passwordPlaceholder'))"
           size="lg"
-          required
           autocomplete="current-password"
           class="w-full"
         >
@@ -127,20 +152,16 @@ const handleSocialLogin = (provider: string) => {
             <Icon name="i-heroicons-lock-closed" class="w-5 h-5 text-gray-400" />
           </template>
         </UInput>
-      </div>
+      </UFormField>
 
       <!-- Remember Me & Forgot Password -->
       <div class="flex items-center justify-between">
         <div class="flex items-center">
-          <input
-            id="remember-me"
-            v-model="rememberMe"
-            type="checkbox"
-            class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 cursor-pointer"
+          <UCheckbox 
+            v-model="state.rememberMe" 
+            name="remember-me" 
+            :label="String($t('auth.login.rememberMe'))" 
           />
-          <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
-            {{ $t('auth.login.rememberMe') }}
-          </label>
         </div>
         <NuxtLink
           :to="$localePath('/auth/forgot-password')"
@@ -162,7 +183,7 @@ const handleSocialLogin = (provider: string) => {
       >
         {{ $t('auth.login.signIn') }}
       </UButton>
-    </form>
+    </UForm>
 
     <!-- Sign Up Link -->
     <div class="text-center">
