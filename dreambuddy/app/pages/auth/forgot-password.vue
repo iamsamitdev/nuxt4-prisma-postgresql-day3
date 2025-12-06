@@ -2,7 +2,8 @@
 const { $t, $localePath } = useI18n()
 
 definePageMeta({
-  layout: 'auth'
+  layout: 'auth',
+  middleware: 'guest'
 })
 
 useHead({

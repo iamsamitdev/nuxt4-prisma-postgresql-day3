@@ -7,7 +7,8 @@ const toast = useToast()
 const router = useRouter()
 
 definePageMeta({
-  layout: 'auth'
+  layout: 'auth',
+  middleware: 'guest'
 })
 
 useHead({

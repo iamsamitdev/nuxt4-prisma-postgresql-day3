@@ -4,18 +4,10 @@
 const { $t, $localePath } = useI18n()
 
 // User state
-const user = useState<{ id: number; username: string; email: string; name: string | null } | null>('user', () => null)
-
-// Fetch user on mount
-const { data: authData } = await useFetch('/api/auth/me')
-if (authData.value?.user) {
-  user.value = authData.value.user
-}
+const { user, logout } = useAuth()
 
 const handleLogout = async () => {
-  await $fetch('/api/auth/logout', { method: 'POST' })
-  user.value = null
-  await navigateTo($localePath('/'))
+  await logout()
   isMobileMenuOpen.value = false
 }
 
@@ -23,28 +15,47 @@ const handleLogout = async () => {
 const isMobileMenuOpen = ref(false)
 
 // ตัวแปรลิงก์การนำทาง
-const navLinks = computed(() => [
-  { name: $t('nav.features'), href: '#features' },
-  { name: $t('nav.howItWorks'), href: '#how-it-works' },
-  { name: $t('nav.community'), href: '#community' },
-  { name: $t('nav.testimonials'), href: '#testimonials' },
-])
+const navLinks = computed(() => {
+  const common = [
+    { name: $t('nav.explore') || 'Explore', href: $localePath('/explore') }
+  ]
+  
+  if (user.value) {
+    return [
+      { name: $t('nav.myGoals') || 'My Goals', href: $localePath('/goals') },
+      ...common
+    ]
+  }
+  
+  return [
+    { name: $t('nav.features'), href: '/#features' },
+    { name: $t('nav.howItWorks'), href: '/#how-it-works' },
+    { name: $t('nav.community'), href: '/#community' },
+    { name: $t('nav.testimonials'), href: '/#testimonials' },
+    ...common
+  ]
+})
+
+const route = useRoute()
 
 // สำหรับการเลื่อนหน้าแบบนุ่มนวลพร้อมการชดเชยสำหรับส่วนหัวที่ติดอยู่
-const scrollToSection = (e: Event, href: string) => {
-  e.preventDefault()
-  const targetId = href.substring(1) // Remove '#'
-  const targetElement = document.getElementById(targetId)
-  
-  if (targetElement) {
-    const headerOffset = 65 // Height of sticky header + some padding
-    const elementPosition = targetElement.getBoundingClientRect().top
-    const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+const handleNavClick = (e: MouseEvent, href: string) => {
+  // ถ้าเป็นลิงก์ภายในหน้า (Anchor) และเราอยู่ที่หน้า Home
+  if (href.startsWith('/#') && route.path === '/') {
+    e.preventDefault()
+    const targetId = href.substring(2) // Remove '/#'
+    const targetElement = document.getElementById(targetId)
+    
+    if (targetElement) {
+      const headerOffset = 65
+      const elementPosition = targetElement.getBoundingClientRect().top
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset
 
-    window.scrollTo({
-      top: offsetPosition,
-      behavior: 'smooth'
-    })
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      })
+    }
   }
   
   // ปิด mobile menu หลังจากคลิก
@@ -85,15 +96,16 @@ const toggleMobileMenu = () => {
 
         <!-- Desktop Navigation -->
         <div class="hidden md:flex items-center space-x-8">
-          <a 
+          <NuxtLink 
             v-for="(link, index) in navLinks" 
             :key="index"
-            :href="link.href"
-            @click="scrollToSection($event, link.href)"
+            :to="link.href"
+            @click="handleNavClick($event, link.href)"
             class="text-gray-600 dark:text-gray-300 hover:text-primary-500 transition-colors cursor-pointer"
+            :active-class="link.href.includes('#') ? '' : 'text-primary-500 font-medium'"
           >
             {{ link.name }}
-          </a>
+          </NuxtLink>
         </div>
 
         <!-- Desktop CTA Buttons -->
@@ -166,15 +178,16 @@ const toggleMobileMenu = () => {
         >
           <!-- Mobile Navigation Links -->
           <div class="flex flex-col space-y-3 mb-4">
-            <a 
+            <NuxtLink 
               v-for="(link, index) in navLinks" 
               :key="index"
-              :href="link.href"
-              @click="scrollToSection($event, link.href)"
+              :to="link.href"
+              @click="handleNavClick($event, link.href)"
               class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-primary-500 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors cursor-pointer"
+              :active-class="link.href.includes('#') ? '' : 'text-primary-500 bg-gray-50 dark:bg-gray-800/50'"
             >
               {{ link.name }}
-            </a>
+            </NuxtLink>
           </div>
 
           <!-- Mobile CTA Buttons -->

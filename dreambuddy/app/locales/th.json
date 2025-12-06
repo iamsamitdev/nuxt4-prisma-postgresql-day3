@@ -5,7 +5,9 @@
     "community": "ชุมชน",
     "testimonials": "รีวิว",
     "signIn": "เข้าสู่ระบบ",
-    "startFree": "เริ่มใช้ฟรี"
+    "startFree": "เริ่มใช้ฟรี",
+    "explore": "สำรวจ",
+    "myGoals": "เป้าหมายของฉัน"
   },
   "hero": {
     "badge": "#1 แอปติดตามเป้าหมายการออม",
@@ -163,7 +165,30 @@
       "cookies": "คุกกี้"
     }
   },
-  "auth": {
+  "goals": {
+      "transaction": {
+        "addTransaction": "เพิ่มรายการ",
+        "type": "ประเภท",
+        "deposit": "ฝาก (ออม)",
+        "withdraw": "ถอน",
+        "amount": "จำนวนเงิน",
+        "amountRequired": "กรุณาระบุจำนวนเงิน",
+        "amountInvalid": "จำนวนเงินต้องเป็นตัวเลข",
+        "amountPositive": "จำนวนเงินต้องมากกว่า 0",
+        "note": "บันทึกช่วยจำ",
+        "notePlaceholder": "บันทึกเพิ่มเติม (ไม่บังคับ)",
+        "typeRequired": "กรุณาเลือกประเภท",
+        "successTitle": "สำเร็จ",
+        "successMessage": "บันทึกรายการเรียบร้อยแล้ว",
+        "errorTitle": "ข้อผิดพลาด",
+        "errorMessage": "บันทึกรายการล้มเหลว"
+      }
+    },
+    "common": {
+      "cancel": "ยกเลิก",
+      "save": "บันทึก"
+    },
+    "auth": {
     "backToHome": "กลับไปหน้าหลัก",
     "leftPanel": {
       "title": "เริ่มต้นการออมเงินของคุณวันนี้",

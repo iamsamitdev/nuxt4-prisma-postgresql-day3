@@ -1,11 +1,14 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-    // อ่าน Cookie ชื่อ dreambuddy_token
-    const token = useCookie('dreambuddy_token').value
+   
+    const { user, fetchUser } = useAuth()
 
-    console.log('Auth Middleware: token =', token)
+    // ถ้ายังไม่มีข้อมูล user ใน state ให้ลอง fetch ใหม่ (กรณี refresh หน้าจอ)
+    if (!user.value) {
+        await fetchUser()
+    }
 
-    // ถ้าไม่มี token ให้ไปที่หน้า login
-    if (!token) {
-       return navigateTo('/auth/login')
+    // ถ้ายังไม่มี user อีก แสดงว่าไม่ได้ login
+    if (!user.value) {
+        return navigateTo('/auth/login')
     }
 })

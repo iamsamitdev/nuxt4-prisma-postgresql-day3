@@ -5,7 +5,9 @@
     "community": "Community",
     "testimonials": "Testimonials",
     "signIn": "Sign In",
-    "startFree": "Start Free"
+    "startFree": "Start Free",
+    "explore": "Explore",
+    "myGoals": "My Goals"
   },
   "hero": {
     "badge": "#1 Savings Goal Tracker",
@@ -163,7 +165,30 @@
       "cookies": "Cookies"
     }
   },
-  "auth": {
+  "goals": {
+      "transaction": {
+        "addTransaction": "Add Transaction",
+        "type": "Type",
+        "deposit": "Deposit (Save)",
+        "withdraw": "Withdraw",
+        "amount": "Amount",
+        "amountRequired": "Amount is required",
+        "amountInvalid": "Amount must be a number",
+        "amountPositive": "Amount must be positive",
+        "note": "Note",
+        "notePlaceholder": "Optional note",
+        "typeRequired": "Type is required",
+        "successTitle": "Success",
+        "successMessage": "Transaction recorded",
+        "errorTitle": "Error",
+        "errorMessage": "Failed to record transaction"
+      }
+    },
+    "common": {
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "auth": {
     "backToHome": "Back to Homepage",
     "leftPanel": {
       "title": "Start Your Savings Journey Today",

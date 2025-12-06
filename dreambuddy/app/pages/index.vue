@@ -1,8 +1,8 @@
 <script setup lang="ts">
 
-  definePageMeta({
-    middleware: 'auth' // ใช้ middleware auth ที่สร้างขึ้น
-  })
+  // definePageMeta({
+  //   middleware: 'auth' // ใช้ middleware auth ที่สร้างขึ้น
+  // })
 
   useHead({
     title: 'DreamBuddy - Turn Your Dreams Into Reality',

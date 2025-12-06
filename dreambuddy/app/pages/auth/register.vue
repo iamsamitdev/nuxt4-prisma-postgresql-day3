@@ -6,7 +6,8 @@ const { $t, $localePath } = useI18n()
 const toast = useToast()
 
 definePageMeta({
-  layout: 'auth'
+  layout: 'auth',
+  middleware: 'guest'
 })
 
 useHead({
