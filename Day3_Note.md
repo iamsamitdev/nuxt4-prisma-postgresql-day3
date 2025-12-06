@@ -1,23 +1,72 @@
 ## Full Stack Nuxt 4 with Prisma and PostgreSQL - Day 3
 
-## 0: 📋 สารบัญ
+## 📋 สารบัญ
+0. [Sample Rest API in Nuxt 4](#sample-rest-api-in-nuxt-4)
 1. [Create Rest API for Authentication](#create-rest-api-for-authentication) * (dev-restapi)
 2. [Dev Authentication Integration](#dev-authentication-integration) * (dev-auth-integration)
+3. [Middlewares for Auth Protection](#middlewares-for-auth-protection) (dev-middlewares)
+
+## 0: Sample Rest API in Nuxt 4
+```
+dreambuddy/
+├─ server/
+│  ├─ api/
+│  │  ├─ hello.get.ts
+│  │  ├─ hello.post.ts
+```
+
+##### 0.1 สร้างไฟล์ `server/api/hello.get.ts`
+```ts
+export default defineEventHandler((event) => {
+  return {
+    hello: 'world',
+  }
+})
+```
+
+##### 0.2 สร้างไฟล์ `server/api/hello.post.ts`
+```ts
+export default defineEventHandler((event) => {
+    return {
+        hello: 'world from POST',
+    }
+})
+```
+
+##### 0.3 ทดสอบการทำงานโดยรันคำสั่ง
+```
+bun run dev
+```
+
+##### 0.4 ใช้ Postman หรือ Insomnia ทดสอบ API
+- ทดสอบ GET: GET `http://localhost:3000/api/hello`
+```json
+{
+  "hello": "world"
+}
+```
+- ทดสอบ POST: POST `http://localhost:3000/api/hello`
+```json
+{
+  "hello": "world from POST"
+}
+```
 
 ## 1: Create Rest API for Authentication
 ```
 dreambuddy/
-├─ app/
-│  ├─ server/
-│  │  ├─ api/
-│  │  │  ├─ auth/
-│  │  │  │  ├─ login.post.ts
-│  │  │  │  ├─ register.post.ts
-│  │  │  │  ├─ me.get.ts
-│  │  │  │  ├─ logout.post.ts
-│  │  ├─ utils/
-│  │  │  ├─ prisma.ts
-│  │  │  ├─ auth.ts
+├─ server/
+│  ├─ api/
+│  │  ├─ hello.get.ts
+│  │  ├─ hello.post.ts
+│  │  ├─ auth/
+│  │  │  ├─ login.post.ts
+│  │  │  ├─ register.post.ts
+│  │  │  ├─ me.get.ts
+│  │  │  ├─ logout.post.ts
+│  ├─ utils/
+│  │  ├─ prisma.ts
+│  │  ├─ auth.ts
 ```
 
 ##### 1.1 ติดตั้งแพ็กเกจที่ใช้
@@ -36,7 +85,7 @@ JWT_EXPIRES_IN=7d
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-##### 1.3 สร้างไฟล์ `app/server/utils/prisma.ts` เพื่อเชื่อมต่อ Prisma Client
+##### 1.3 สร้างไฟล์ `server/utils/prisma.ts` เพื่อเชื่อมต่อ Prisma Client
 ```ts
 import { PrismaClient } from '../../app/generated/prisma/client'
 
@@ -55,7 +104,7 @@ if (!globalForPrisma.prisma) {
 }
 ```
 
-##### 1.4 สร้าง helper สำหรับ Auth ใน `app/server/utils/auth.ts`
+##### 1.4 สร้าง helper สำหรับ Auth ใน `server/utils/auth.ts`
 ```ts
 import { H3Event, getCookie, setCookie, deleteCookie } from 'h3'
 import { prisma } from './prisma'
@@ -100,7 +149,7 @@ export function verifyToken(token: string): JwtPayload | null {
 
 export function setAuthCookie(event: H3Event, token: string) {
   setCookie(event, COOKIE_NAME, token, {
-    httpOnly: true,
+    httpOnly: false,
     path: '/',
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -127,7 +176,7 @@ export async function getCurrentUser(event: H3Event) {
 } 
 ```
 
-##### 1.5 สร้าง API สำหรับ Register ใน `app/server/api/auth/register.post.ts`
+##### 1.5 สร้าง API สำหรับ Register ใน `server/api/auth/register.post.ts`
 ```ts
 import { prisma } from "../../utils/prisma"
 import { hashPassword, signToken, setAuthCookie } from "../../utils/auth"
@@ -200,7 +249,7 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
-##### 1.6 สร้าง API สำหรับ Login ใน `app/server/api/auth/login.post.ts`
+##### 1.6 สร้าง API สำหรับ Login ใน `server/api/auth/login.post.ts`
 ```ts
 import { prisma } from "../../utils/prisma"
 import { verifyPassword, signToken, setAuthCookie } from "../../utils/auth"
@@ -263,7 +312,7 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
-##### 1.7 สร้าง API สำหรับดึงข้อมูลผู้ใช้ปัจจุบันใน `app/server/api/auth/me.get.ts`
+##### 1.7 สร้าง API สำหรับดึงข้อมูลผู้ใช้ปัจจุบันใน `server/api/auth/me.get.ts`
 ```ts
 import { getCurrentUser } from "../../utils/auth"
 
@@ -285,7 +334,7 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
-##### 1.8 สร้าง API สำหรับ Logout ใน `app/server/api/auth/logout.post.ts`
+##### 1.8 สร้าง API สำหรับ Logout ใน `server/api/auth/logout.post.ts`
 ```ts
 import { clearAuthCookie } from "../../utils/auth"
 
@@ -1061,4 +1110,75 @@ const toggleMobileMenu = () => {
 ##### 2.5 ทดสอบการทำงานโดยรันคำสั่ง
 ```
 bun run dev
+```
+
+## 3. Middlewares for Auth Protection
+
+```
+dreambuddy/
+├─ server/
+│  ├─ middleware/
+│  │  ├─ auth.ts
+```
+
+##### 3.1 สร้าง middleware ฝั่ง server เพื่อตรวจสอบการล็อกอินของผู้ใช้ใน `server/middleware/auth.ts`
+
+```ts
+import { verifyToken } from "../utils/auth"
+
+export default defineEventHandler((event) => {
+    console.log("Auth middleware triggered")
+    // อ่าน Cookie ชื่อ dreambuddy_token
+    const token = getCookie(event, 'dreambuddy_token')
+
+    // ถ้ามี token ให้ตรวจสอบความถูกต้อง
+    if (token) {
+        // ตรวจสอบ token
+        const payload = verifyToken(token)
+
+        // ถ้า token ถูกต้อง ให้แนบข้อมูลผู้ใช้ลงใน event.context
+        if (payload) {
+            event.context.auth = payload
+        }
+    }
+})
+```
+
+##### 3.2 สร้าง middleware ฝั่ง client เพื่อตรวจสอบการล็อกอินของผู้ใช้ใน `app/middleware/auth.global.ts`
+
+```
+dreambuddy/
+├─ app/
+│  ├─ middleware/
+│  │  ├─ auth.ts
+```
+
+```ts
+export default defineNuxtRouteMiddleware(async (to, from) => {
+    // อ่าน Cookie ชื่อ dreambuddy_token
+    const token = useCookie('dreambuddy_token').value
+
+    console.log('Auth Middleware: token =', token)
+
+    // ถ้าไม่มี token ให้ไปที่หน้า login
+    if (!token) {
+       return navigateTo('/auth/login')
+    }
+})
+```
+
+##### 3.3 ตัวอย่างการใช้งาน middleware ในหน้า `app/pages/index.vue`
+```vue
+<script setup lang="ts">
+  definePageMeta({
+    middleware: 'auth' // ใช้ middleware auth ที่สร้างขึ้น
+  })
+</script>
+<template>
+  <div>
+    <h1>Welcome to the protected home page!</h1>
+  </div>
+</template>
+<style scoped>
+</style>
 ```
